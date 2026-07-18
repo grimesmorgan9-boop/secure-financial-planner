@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Review · {{ month.label }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <div>
+    <h1 class="h3 mb-0">Monthly Review</h1>
+    <p class="text-muted mb-0">{{ month.label }}{% if month.locked %} <span class="badge bg-secondary badge-locked">Closed</span>{% endif %}</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('months.plan_month', month_id=month.id) }}" class="btn btn-sm btn-outline-primary">Plan</a>
+    <a href="{{ url_for('months.actual_month', month_id=month.id) }}" class="btn btn-sm btn-outline-primary">Actuals</a>
+  </div>
+</div>
+
+{% if not month.locked %}
+<div class="alert alert-info">Close this month from the Actuals page to unlock the AI Monthly Review.</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-lg-3">
+    <div class="card card-metric h-100"><div class="card-body">
+      <div class="text-muted small">Planned Net</div>
+      <div class="metric-value">£{{ "%.2f"|format(planned.net) }}</div>
+    </div></div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card card-metric h-100"><div class="card-body">
+      <div class="text-muted small">Actual Net</div>
+      <div class="metric-value {{ 'text-positive' if actual.net >= 0 else 'text-negative' }}">£{{ "%.2f"|format(actual.net) }}</div>
+    </div></div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card card-metric h-100"><div class="card-body">
+      <div class="text-muted small">Net After Savings</div>
+      <div class="metric-value {{ 'text-positive' if actual.net_after_savings >= 0 else 'text-negative' }}">£{{ "%.2f"|format(actual.net_after_savings) }}</div>
+    </div></div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card card-metric h-100"><div class="card-body">
+      <div class="text-muted small">Overspend / Underspend</div>
+      <div class="small mt-1">
+        <div><strong>Over:</strong> {{ overspend.name if overspend else '—' }}</div>
+        <div><strong>Under:</strong> {{ underspend.name if underspend else '—' }}</div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header">Category Variances</div>
+  <div class="table-responsive">
+    <table class="table table-sm mb-0">
+      <thead><tr><th>Category</th><th class="text-end">Planned</th><th class="text-end">Actual</th><th class="text-end">Variance</th></tr></thead>
+      <tbody>
+      {% for line in lines %}
+        {% if line.planned != 0 or line.actual != 0 %}
+        <tr>
+          <td>{{ line.name }}</td>
+          <td class="text-end">£{{ "%.2f"|format(line.planned) }}</td>
+          <td class="text-end">£{{ "%.2f"|format(line.actual) }}</td>
+          <td class="text-end {{ 'text-negative' if line.variance < 0 else 'text-positive' }}">£{{ "%.2f"|format(line.variance) }}</td>
+        </tr>
+        {% endif %}
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>AI Monthly Review</span>
+    {% if month.locked %}
+    <form method="POST" action="{{ url_for('reviews.generate_review_route', month_id=month.id) }}">
+      {{ csrf_form.hidden_tag() }}
+      <button type="submit" class="btn btn-sm btn-primary">{{ 'Regenerate' if review else 'Generate' }} AI Review</button>
+    </form>
+    {% endif %}
+  </div>
+  <div class="card-body">
+    {% if review %}
+      <div class="ai-report">{{ review.ai_report }}</div>
+      <p class="text-muted small mt-2 mb-0">Generated {{ review.created_at.strftime('%d %b %Y %H:%M') }} UTC</p>
+    {% else %}
+      <p class="text-muted mb-0">No AI review has been generated for this month yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

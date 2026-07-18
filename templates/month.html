@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Plan' if mode == 'plan' else 'Actuals' }} · {{ month.label }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <div>
+    <h1 class="h3 mb-0">{{ 'Plan Month' if mode == 'plan' else 'Actual Month' }}</h1>
+    <p class="text-muted mb-0">{{ month.label }}{% if month.locked %} <span class="badge bg-secondary badge-locked">Closed</span>{% endif %}</p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{{ url_for('months.plan_month', month_id=month.id) }}" class="btn btn-sm {{ 'btn-primary' if mode == 'plan' else 'btn-outline-primary' }}">Plan</a>
+    <a href="{{ url_for('months.actual_month', month_id=month.id) }}" class="btn btn-sm {{ 'btn-primary' if mode == 'actual' else 'btn-outline-primary' }}">Actuals</a>
+    <a href="{{ url_for('reviews.view_review', month_id=month.id) }}" class="btn btn-sm btn-outline-secondary">Review</a>
+  </div>
+</div>
+
+{% if month.locked %}
+<div class="alert alert-secondary">This month is closed. Values are read-only. View the <a href="{{ url_for('reviews.view_review', month_id=month.id) }}">Monthly Review</a>.</div>
+{% endif %}
+
+<div class="d-flex flex-wrap gap-2 mb-3">
+  {% if mode == 'plan' and not month.locked %}
+    {% if previous_month %}
+    <form method="POST" action="{{ url_for('months.copy_previous_plan', month_id=month.id) }}" class="d-inline">
+      {{ csrf_form.hidden_tag() }}
+      <button type="submit" class="btn btn-sm btn-outline-secondary">Copy Previous Month ({{ previous_month.label }})</button>
+    </form>
+    {% endif %}
+  {% endif %}
+  <div class="form-check form-switch ms-auto align-self-center">
+    <input class="form-check-input" type="checkbox" id="hideUnused">
+    <label class="form-check-label small" for="hideUnused">Hide unused categories</label>
+  </div>
+</div>
+
+<form method="POST">
+  {{ csrf_form.hidden_tag() }}
+  {% set groups = ['income', 'fixed', 'variable', 'savings'] %}
+  {% set group_labels = {'income': 'Income', 'fixed': 'Fixed Expenses', 'variable': 'Variable Expenses', 'savings': 'Savings'} %}
+
+  {% for group in groups %}
+  <div class="card mb-3">
+    <div class="card-header category-group-header">{{ group_labels[group] }}</div>
+    <div class="table-responsive">
+      <table class="table table-sm mb-0 align-middle">
+        <thead>
+          <tr>
+            <th>Category</th>
+            {% if mode == 'actual' %}<th class="text-end">Planned</th>{% endif %}
+            <th class="text-end">{{ 'Planned Amount' if mode == 'plan' else 'Actual Amount' }}</th>
+            {% if mode == 'actual' %}<th class="text-end">Variance</th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+        {% for cat in categories if cat.group == group %}
+          {% set current_value = plan_map.get(cat.id, 0) if mode == 'plan' else actual_map.get(cat.id, 0) %}
+          {% set planned_value = plan_map.get(cat.id, 0) %}
+          {% set is_unused = (current_value == 0) %}
+          <tr class="cat-row" data-unused="{{ 'true' if is_unused else 'false' }}">
+            <td>{{ cat.name }}</td>
+            {% if mode == 'actual' %}<td class="text-end">£{{ "%.2f"|format(planned_value) }}</td>{% endif %}
+            <td class="text-end">
+              <input
+                type="number" step="0.01" min="0"
+                name="amount_{{ cat.id }}"
+                class="form-control form-control-sm table-amount-input ms-auto"
+                value="{{ current_value }}"
+                {% if month.locked %}disabled{% endif %}
+              >
+            </td>
+            {% if mode == 'actual' %}
+              {% set variance = planned_value - actual_map.get(cat.id, 0) %}
+              <td class="text-end {{ 'text-negative' if variance < 0 else 'text-positive' }}">£{{ "%.2f"|format(variance) }}</td>
+            {% endif %}
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+
+  {% if not month.locked %}
+  <button type="submit" class="btn btn-primary">Save {{ 'Plan' if mode == 'plan' else 'Actuals' }}</button>
+  {% endif %}
+</form>
+
+{% if mode == 'actual' and not month.locked %}
+<form method="POST" action="{{ url_for('months.close_month', month_id=month.id) }}" class="mt-3" onsubmit="return confirm('Close this month? Editing will be locked.');">
+  {{ csrf_form.hidden_tag() }}
+  <button type="submit" class="btn btn-outline-danger">Close Month</button>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('hideUnused').addEventListener('change', function (e) {
+    document.querySelectorAll('.cat-row').forEach(function (row) {
+      if (row.dataset.unused === 'true') {
+        row.style.display = e.target.checked ? 'none' : '';
+      }
+    });
+  });
+</script>
+{% endblock %}

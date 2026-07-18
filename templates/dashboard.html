@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · Secure Budget Planner{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-0">Dashboard</h1>
+    <p class="text-muted mb-0">{{ month.label }}{% if month.locked %} <span class="badge bg-secondary badge-locked">Closed</span>{% endif %}</p>
+  </div>
+  <div>
+    <a href="{{ url_for('months.plan_month', month_id=month.id) }}" class="btn btn-outline-primary">Plan This Month</a>
+    <a href="{{ url_for('months.actual_month', month_id=month.id) }}" class="btn btn-primary">Enter Actuals</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-lg-3">
+    <div class="card card-metric h-100">
+      <div class="card-body">
+        <div class="text-muted small">Planned Income</div>
+        <div class="metric-value">£{{ "%.2f"|format(planned.income) }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card card-metric h-100">
+      <div class="card-body">
+        <div class="text-muted small">Planned Expenses</div>
+        <div class="metric-value">£{{ "%.2f"|format(planned.expenses) }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card card-metric h-100">
+      <div class="card-body">
+        <div class="text-muted small">Planned Savings</div>
+        <div class="metric-value">£{{ "%.2f"|format(planned.savings) }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card card-metric h-100">
+      <div class="card-body">
+        <div class="text-muted small">Net Balance (Actual)</div>
+        <div class="metric-value {{ 'text-positive' if actual.net >= 0 else 'text-negative' }}">£{{ "%.2f"|format(actual.net) }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <h2 class="h6">Spending by Category</h2>
+        <canvas id="categoryChart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <h2 class="h6">Income vs Expenses</h2>
+        <canvas id="incomeExpenseChart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <h2 class="h6">Savings Progress</h2>
+        <canvas id="savingsChart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <h2 class="h6">Monthly Trend</h2>
+        <canvas id="trendChart" height="220"></canvas>
+        <div class="form-text">Trend data populates as you close more months.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h2 class="h6">Quick Actions</h2>
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('months.select_month') }}">Go to a different month</a>
+      <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('reviews.view_review', month_id=month.id) }}">View this month's review</a>
+      <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('months.history') }}">View history</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+  const categoryLabels = {{ lines|selectattr('group', 'in', ['fixed', 'variable'])|selectattr('actual', 'ne', 0)|map(attribute='name')|list|tojson }};
+  const categoryData = {{ lines|selectattr('group', 'in', ['fixed', 'variable'])|selectattr('actual', 'ne', 0)|map(attribute='actual')|map('float')|list|tojson }};
+
+  new Chart(document.getElementById('categoryChart'), {
+    type: 'doughnut',
+    data: {
+      labels: categoryLabels.length ? categoryLabels : ['No spending yet'],
+      datasets: [{
+        data: categoryData.length ? categoryData : [1],
+        backgroundColor: ['#2f6f4f','#4c9a72','#7bbf9a','#a7d7bf','#c7605a','#e08e77','#f2b880','#8892b0','#5b6b8c','#d1c46a']
+      }]
+    },
+    options: { plugins: { legend: { position: 'bottom' } } }
+  });
+
+  new Chart(document.getElementById('incomeExpenseChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Planned', 'Actual'],
+      datasets: [
+        { label: 'Income', backgroundColor: '#2f6f4f', data: [{{ planned.income }}, {{ actual.income }}] },
+        { label: 'Expenses', backgroundColor: '#b3261e', data: [{{ planned.expenses }}, {{ actual.expenses }}] }
+      ]
+    },
+    options: { scales: { y: { beginAtZero: true } } }
+  });
+
+  new Chart(document.getElementById('savingsChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Savings'],
+      datasets: [
+        { label: 'Planned', backgroundColor: '#7bbf9a', data: [{{ planned.savings }}] },
+        { label: 'Actual', backgroundColor: '#2f6f4f', data: [{{ actual.savings }}] }
+      ]
+    },
+    options: { indexAxis: 'y', scales: { x: { beginAtZero: true } } }
+  });
+
+  new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels: ['{{ month.label }}'],
+      datasets: [{ label: 'Net After Savings', borderColor: '#2f6f4f', data: [{{ actual.net_after_savings }}], tension: 0.3 }]
+    },
+    options: { scales: { y: { beginAtZero: true } } }
+  });
+</script>
+{% endblock %}

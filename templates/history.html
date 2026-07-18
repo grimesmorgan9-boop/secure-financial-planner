@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}History · Secure Budget Planner{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-4">Month History</h1>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle">
+      <thead>
+        <tr>
+          <th>Month</th>
+          <th class="text-end">Net After Savings</th>
+          <th class="text-end">Overspend Count</th>
+          <th class="text-end">Review</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td>{{ row.month.label }}</td>
+          <td class="text-end {{ 'text-positive' if row.net_after_savings >= 0 else 'text-negative' }}">
+            £{{ "%.2f"|format(row.net_after_savings) }}
+          </td>
+          <td class="text-end">{{ row.overspend_count }}</td>
+          <td class="text-end">
+            <a href="{{ url_for('reviews.view_review', month_id=row.month.id) }}" class="btn btn-sm btn-outline-secondary">View</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center text-muted py-4">No completed months yet. Close a month to see it here.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

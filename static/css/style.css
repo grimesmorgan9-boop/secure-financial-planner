@@ -1,0 +1,66 @@
+/* Secure Budget Planner - base styling
+   Kept intentionally light: Bootstrap 5 handles most layout/utility
+   classes, this file only adds the project's visual identity. */
+
+:root {
+  --sbp-accent: #2f6f4f;
+  --sbp-accent-dark: #21503a;
+}
+
+body {
+  background-color: #f6f8fa;
+}
+
+[data-bs-theme="dark"] body {
+  background-color: #10151c;
+}
+
+.navbar-brand {
+  letter-spacing: 0.02em;
+}
+
+.card {
+  border: none;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.card-metric .metric-value {
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.text-positive {
+  color: var(--sbp-accent);
+}
+
+.text-negative {
+  color: #b3261e;
+}
+
+.category-group-header {
+  background-color: rgba(47, 111, 79, 0.08);
+  font-weight: 600;
+}
+
+[data-bs-theme="dark"] .category-group-header {
+  background-color: rgba(47, 111, 79, 0.18);
+}
+
+.auth-card {
+  max-width: 420px;
+  margin: 3rem auto;
+}
+
+.table-amount-input {
+  max-width: 140px;
+}
+
+.ai-report {
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.badge-locked {
+  letter-spacing: 0.03em;
+}

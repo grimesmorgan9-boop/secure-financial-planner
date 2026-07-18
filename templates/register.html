@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Register · Secure Budget Planner{% endblock %}
+
+{% block content %}
+<div class="card auth-card">
+  <div class="card-body p-4">
+    <h1 class="h4 mb-3 text-center">Create your account</h1>
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}
+
+      <div class="mb-3">
+        {{ form.username.label(class_="form-label") }}
+        {{ form.username(class_="form-control" ~ (" is-invalid" if form.username.errors else ""), autofocus=true) }}
+        {% for error in form.username.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+        <div class="form-text">3-32 characters: letters, numbers, dots, hyphens, underscores.</div>
+      </div>
+
+      <div class="mb-3">
+        {{ form.email.label(class_="form-label") }}
+        {{ form.email(class_="form-control" ~ (" is-invalid" if form.email.errors else "")) }}
+        {% for error in form.email.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+      </div>
+
+      <div class="mb-3">
+        {{ form.password.label(class_="form-label") }}
+        {{ form.password(class_="form-control" ~ (" is-invalid" if form.password.errors else "")) }}
+        {% for error in form.password.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+        <div class="form-text">At least 10 characters, including a letter and a number.</div>
+      </div>
+
+      <div class="mb-3">
+        {{ form.confirm_password.label(class_="form-label") }}
+        {{ form.confirm_password(class_="form-control" ~ (" is-invalid" if form.confirm_password.errors else "")) }}
+        {% for error in form.confirm_password.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+      </div>
+
+      {{ form.submit(class_="btn btn-primary w-100") }}
+    </form>
+
+    <hr>
+    <p class="text-center mb-0 small">
+      Already have an account? <a href="{{ url_for('auth.login') }}">Log in</a>
+    </p>
+  </div>
+</div>
+{% endblock %}
